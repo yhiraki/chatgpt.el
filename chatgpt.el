@@ -24,10 +24,14 @@
 	(:stream . t)
 	(:messages . ,(reverse messages))))
 
-(defun chatgpt-encode-request-data (body)
+(defun chatgpt-encode-request-data (data)
   (encode-coding-string
-   (json-encode-alist body)
-	'utf-8))
+   (json-encode-alist data)
+   'utf-8))
+
+(defun chatgpt-decode-response-data (data)
+  (json-read-from-string
+   (decode-coding-string data 'utf-8)))
 
 (defcustom chatgpt-api-token nil
   "OpenAPI token."
@@ -67,12 +71,11 @@
 			 (setq done t))
 			(data
 			 (progn
-			   (let* ((data-json (json-read-from-string (decode-coding-string data 'utf-8)))
+			   (let* ((data-json (chatgpt-decode-response-data data))
 					  (res (mapconcat
 							#'(lambda (choice) (cdr (assq 'content (cdr (assq 'delta choice)))))
 							(cdr (assq 'choices data-json))
 							"")))
-				 (message "%s" res)
 				 (let ((res-to res-pos))
 				   (with-current-buffer res-buffer
 					 (save-excursion
@@ -105,9 +108,7 @@
 	 nil t)
 	))
 
-
-
-;; main
+;; main for testing
 
 (let* ((m (chatgpt-add-request-message "system" "one"))
 	   (m (chatgpt-add-request-message "user" "two" m))
