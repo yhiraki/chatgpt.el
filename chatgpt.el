@@ -1,4 +1,4 @@
-;;; chatgpt.el --- Use ChatGPT inside Emacs  -*- lexical-binding: t; -*-
+;;; chatgpt.el --- Use ChatGPT inside Emacs
 
 ;; Author: yhiraki <coffexpr@gmail.com>
 ;; URL: https://github.com/yhiraki/chatgpt.el
