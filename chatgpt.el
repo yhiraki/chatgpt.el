@@ -1,3 +1,18 @@
+;;; chatgpt.el --- Use ChatGPT inside Emacs  -*- lexical-binding: t; -*-
+
+;; Author: yhiraki <coffexpr@gmail.com>
+;; URL: https://github.com/yhiraki/chatgpt.el
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "28.2"))
+;; Keywords: openai
+;; License: MIT
+
+;;; Commentary:
+
+;; Use ChatGPT inside Emacs
+
+;;; Code:
+
 (defun chatgpt-add-request-message (role content &optional messages)
   (let* ((messages (if messages messages ()))
 		 (msg `((:role . ,role)(:content . ,content))))
@@ -106,4 +121,6 @@
    (chatgpt-request chatgpt-url-chat d))
   )
 
-; 
+(provide 'chatgpt)
+
+;;; chatgpt.el ends here
