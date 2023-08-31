@@ -13,11 +13,12 @@
 
 ;;; Code:
 
+(require 'json)
+
 (defun chatgpt-add-request-message (role content &optional messages)
   (let* ((messages (if messages messages ()))
          (msg `((:role . ,role)(:content . ,content))))
-    (push msg messages)
-    messages))
+    (push msg messages)))
 
 (defun chatgpt-request-data (messages)
   `((:model . "gpt-3.5-turbo")
@@ -55,6 +56,7 @@
   (kill-buffer (current-buffer)))
 
 (defun chatgpt-handle-response-stream (_beg _end _len)
+  "Not documented."
   (save-excursion
     (goto-char bbeg)
     (let* ((beg (ignore-errors (re-search-forward "^data: ")))
@@ -94,14 +96,10 @@
 
 (defun chatgpt-response-parse-and-insert (insert-buffer insert-pos chatgpt-buffer)
   (with-current-buffer chatgpt-buffer
-    (make-variable-buffer-local 'done)
-    (make-variable-buffer-local 'res-pos)
-    (make-variable-buffer-local 'res-buffer)
-    (make-variable-buffer-local 'bbeg)
-    (setq done nil)
-    (setq res-buffer insert-buffer)
-    (setq res-pos insert-pos)
-    (setq bbeg 0)
+    (setq-local done nil
+                res-buffer insert-buffer
+                res-pos insert-pos
+                bbeg 0)
     (add-hook
      'after-change-functions
      #'chatgpt-handle-response-stream
@@ -109,17 +107,19 @@
     ))
 
 ;; main for testing
+(defun chatgpt-test ()
+  (interactive)
+  (let* ((m (chatgpt-add-request-message "system" "one"))
+         (m (chatgpt-add-request-message "user" "two" m))
+         (m (chatgpt-add-request-message "system" "three" m))
+         (m (chatgpt-add-request-message "user" "3の倍数と3が含まれる時だけ馬鹿になるPythonのコードを書いてください" m))
+         (d (chatgpt-request-data m))
+         (chatgpt-api-token org-babel-chatgpt-api-token))
 
-(let* ((m (chatgpt-add-request-message "system" "one"))
-       (m (chatgpt-add-request-message "user" "two" m))
-       (m (chatgpt-add-request-message "system" "three" m))
-       (m (chatgpt-add-request-message "user" "3の倍数と3が含まれる時だけ馬鹿になるPythonのコードを書いてください" m))
-       (d (chatgpt-request-data m))
-       (chatgpt-api-token org-babel-chatgpt-api-token))
-
-  (chatgpt-response-parse-and-insert
-   (buffer-name) (point-max)
-   (chatgpt-request chatgpt-url-chat d))
+    (chatgpt-response-parse-and-insert
+     (buffer-name) (point-max)
+     (chatgpt-request chatgpt-url-chat d))
+    )
   )
 
 (provide 'chatgpt)
