@@ -15,6 +15,11 @@
 
 (require 'json)
 
+(defcustom chatgpt-api-token
+  "OpenAPI token."
+  :type 'string
+  :group 'chatgpt-)
+
 (defun chatgpt-add-request-message (role content &optional messages)
   (let* ((messages (if messages messages ()))
          (msg `((:role . ,role)(:content . ,content))))
@@ -33,11 +38,6 @@
 (defun chatgpt-decode-response-data (data)
   (json-read-from-string
    (decode-coding-string data 'utf-8)))
-
-(defcustom chatgpt-api-token nil
-  "OpenAPI token."
-  :type 'string
-  :group 'chatgpt-)
 
 (defun chatgpt-request-headers ()
   `(("Content-Type" . "application/json")
