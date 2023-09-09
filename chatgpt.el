@@ -15,7 +15,7 @@
 
 (require 'json)
 
-(defcustom chatgpt-api-token
+(defcustom chatgpt-api-token nil
   "OpenAPI token."
   :type 'string
   :group 'chatgpt-)
@@ -44,7 +44,7 @@
     ("Authorization" . ,(format "Bearer %s" chatgpt-api-token))))
 
 (defun chatgpt-request (url data)
-  "Send ARGS to URL as a POST request."
+  "Send DATA to URL as a POST request."
   (let ((url-request-method "POST")
         (url-request-extra-headers (chatgpt-request-headers))
         (url-request-data (chatgpt-encode-request-data data)))
@@ -108,13 +108,13 @@
 
 ;; main for testing
 (defun chatgpt-test ()
+  "chatgpt testing"
   (interactive)
   (let* ((m (chatgpt-add-request-message "system" "one"))
          (m (chatgpt-add-request-message "user" "two" m))
          (m (chatgpt-add-request-message "system" "three" m))
          (m (chatgpt-add-request-message "user" "3の倍数と3が含まれる時だけ馬鹿になるPythonのコードを書いてください" m))
-         (d (chatgpt-request-data m))
-         (chatgpt-api-token org-babel-chatgpt-api-token))
+         (d (chatgpt-request-data m)))
 
     (chatgpt-response-parse-and-insert
      (buffer-name) (point-max)
