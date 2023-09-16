@@ -28,7 +28,7 @@
 (defun chatgpt-request-data (messages)
   `((:model . "gpt-3.5-turbo")
     (:stream . t)
-    (:messages . ,(reverse messages))))
+    (:messages . ,messages)))
 
 (defun chatgpt-encode-request-data (data)
   (encode-coding-string
@@ -114,7 +114,7 @@
          (m (chatgpt-add-request-message "user" "two" m))
          (m (chatgpt-add-request-message "system" "three" m))
          (m (chatgpt-add-request-message "user" "3の倍数と3が含まれる時だけ馬鹿になるPythonのコードを書いてください" m))
-         (d (chatgpt-request-data m)))
+         (d (chatgpt-request-data (reverse m))))
 
     (chatgpt-response-parse-and-insert
      (buffer-name) (point-max)
