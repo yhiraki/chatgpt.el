@@ -1,4 +1,4 @@
-;;; chatgpt.el --- Use ChatGPT inside Emacs
+;;; chatgpt.el --- Use ChatGPT inside Emacs -*- lexical-binding: t; -*-)
 
 ;; Author: yhiraki <coffexpr@gmail.com>
 ;; URL: https://github.com/yhiraki/chatgpt.el
@@ -51,12 +51,31 @@
     (url-retrieve url 'chatgpt-kill-url-buffer nil t))
   )
 
-(defun chatgpt-kill-url-buffer (status)
+(defun chatgpt-kill-url-buffer (_status)
   "Kill the buffer returned by `url-retrieve'."
   (kill-buffer (current-buffer)))
 
+(require 'generator)
+
+(iter-defun chatgpt-handle-response-stream-gen ()
+  "Handle chatgpt streaming response.
+
+CHATGPT-BUFFER"
+  (while (re-search-forward "^data: " nil t)
+    (let* ((data-json (buffer-substring (point) (line-end-position)))
+           (data (ignore-errors (json-read-from-string data-json))))
+      (iter-yield data)
+      )
+    )
+  )
+
+(with-current-buffer (current-buffer)
+  (save-excursion
+    (let ((gen (chatgpt-handle-response-stream-gen)))
+      (iter-do (i gen) (message "%s" i)))))
+
 (defun chatgpt-handle-response-stream (_beg _end _len)
-  "Not documented."
+  "Handle chatgpt streaming response."
   (save-excursion
     (goto-char bbeg)
     (let* ((beg (ignore-errors (re-search-forward "^data: ")))
