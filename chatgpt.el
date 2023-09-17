@@ -57,24 +57,45 @@
 
 (require 'generator)
 
-(iter-defun chatgpt-handle-response-stream-gen ()
+(iter-defun chatgpt-handle-response-stream-gen (pos)
   "Handle chatgpt streaming response.
+Start from POS"
+  (goto-char pos)
+  (let ((done nil)
+        (data t))
+    (while data
+      (re-search-forward "^data: " nil t)
+      (let* ((data-json (buffer-substring (point) (line-end-position))))
+        (setq data (ignore-errors (json-read-from-string data-json)))
+        (when (string= data-json "[DONE]")
+          (setq done t))
+        (when data
+          (iter-yield data))))
+    (if done nil (line-beginning-position))))
 
-CHATGPT-BUFFER"
-  (while (re-search-forward "^data: " nil t)
-    (let* ((data-json (buffer-substring (point) (line-end-position)))
-           (data (ignore-errors (json-read-from-string data-json))))
-      (iter-yield data)
-      )
-    )
-  )
+(defun chatgpt-handle-response-stream (buffer pos handler)
+  "Handle chatgpt streaming response, from chatgpt response BUFFER and POS ition.
 
-(with-current-buffer (current-buffer)
-  (save-excursion
-    (let ((gen (chatgpt-handle-response-stream-gen)))
-      (iter-do (i gen) (message "%s" i)))))
+HANDLER is function."
+  (with-current-buffer buffer
+    (save-excursion
+      (let* ((gen (chatgpt-handle-response-stream-gen pos))
+             (p (iter-do (i gen) (apply handler `(,i)))))
+        (when p
+          (run-at-time 0.1 nil 'chatgpt-handle-response-stream buffer p handler))))))
 
-(defun chatgpt-handle-response-stream (_beg _end _len)
+(defun chatgpt-parse-response (data)
+  "Extract message from chatgpt response DATA."
+  (mapconcat
+   #'(lambda (choice) (cdr (assq 'content (cdr (assq 'delta choice)))))
+   (cdr (assq 'choices data))
+   ""))
+
+;; (chatgpt-handle-response-stream
+;;  "hoge" 0
+;;  '(lambda (msg) (message "%s" msg)))
+
+(defun chatgpt-handle-response-stream-2 (_beg _end _len)
   "Handle chatgpt streaming response."
   (save-excursion
     (goto-char bbeg)
@@ -100,7 +121,6 @@ CHATGPT-BUFFER"
                  (let ((res-to res-pos))
                    (with-current-buffer res-buffer
                      (save-excursion
-                       (message "%s" res-to)
                        (goto-char res-to)
                        (insert res))))
                  (setq res-pos (+ (length res) res-pos))
