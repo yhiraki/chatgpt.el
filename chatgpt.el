@@ -75,7 +75,6 @@ Start from POS"
 
 (defun chatgpt-handle-response-stream (buffer pos handler)
   "Handle chatgpt streaming response, from chatgpt response BUFFER and POS ition.
-
 HANDLER is function."
   (with-current-buffer buffer
     (save-excursion
@@ -91,9 +90,13 @@ HANDLER is function."
    (cdr (assq 'choices data))
    ""))
 
-;; (chatgpt-handle-response-stream
-;;  "hoge" 0
-;;  '(lambda (msg) (message "%s" msg)))
+;; (let ((buf (current-buffer)))
+;;   (chatgpt-handle-response-stream
+;;    "hoge" 0
+;;    `(lambda (data)
+;;       (with-current-buffer ,buf
+;;         (insert (chatgpt-parse-response data))))
+;;    ))
 
 (defun chatgpt-handle-response-stream-2 (_beg _end _len)
   "Handle chatgpt streaming response."
