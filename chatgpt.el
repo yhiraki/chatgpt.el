@@ -66,7 +66,7 @@ Start from POS"
     (while data
       (re-search-forward "^data: " nil t)
       (let* ((data-json (buffer-substring (point) (line-end-position))))
-        (setq data (ignore-errors (json-read-from-string data-json)))
+        (setq data (ignore-errors (chatgpt-decode-response-data data-json)))
         (when (string= data-json "[DONE]")
           (setq done t))
         (when data
@@ -79,7 +79,7 @@ HANDLER is function."
   (with-current-buffer buffer
     (save-excursion
       (let* ((gen (chatgpt-handle-response-stream-gen pos))
-             (p (iter-do (i gen) (apply handler `(,i)))))
+             (p (iter-do (i gen) (funcall handler i))))
         (when p
           (run-at-time 0.1 nil 'chatgpt-handle-response-stream buffer p handler))))))
 
@@ -98,55 +98,19 @@ HANDLER is function."
 ;;         (insert (chatgpt-parse-response data))))
 ;;    ))
 
-(defun chatgpt-handle-response-stream-2 (_beg _end _len)
-  "Handle chatgpt streaming response."
-  (save-excursion
-    (goto-char bbeg)
-    (let* ((beg (ignore-errors (re-search-forward "^data: ")))
-           (has-end (when beg
-                      (goto-char beg)
-                      (search-forward "\n\n")))
-           (end (when has-end
-                  (goto-char beg)
-                  (re-search-forward "$")))
-           (data (when end (buffer-substring beg end)))
-           )
-      (cond ((string= data "[DONE]")
-             (message "DONE")
-             (setq done t))
-            (data
-             (progn
-               (let* ((data-json (chatgpt-decode-response-data data))
-                      (res (mapconcat
-                            #'(lambda (choice) (cdr (assq 'content (cdr (assq 'delta choice)))))
-                            (cdr (assq 'choices data-json))
-                            "")))
-                 (let ((res-to res-pos))
-                   (with-current-buffer res-buffer
-                     (save-excursion
-                       (goto-char res-to)
-                       (insert res))))
-                 (setq res-pos (+ (length res) res-pos))
-                 )
-               (setq bbeg end)
-               )))
-      )
-    )
-  )
-
 (defconst chatgpt-url-chat "https://api.openai.com/v1/chat/completions")
 
 (defun chatgpt-response-parse-and-insert (insert-buffer insert-pos chatgpt-buffer)
-  (with-current-buffer chatgpt-buffer
-    (setq-local done nil
-                res-buffer insert-buffer
-                res-pos insert-pos
-                bbeg 0)
-    (add-hook
-     'after-change-functions
-     #'chatgpt-handle-response-stream
-     nil t)
-    ))
+  "doc"
+  (with-current-buffer insert-buffer
+    (goto-char insert-pos)
+    (chatgpt-handle-response-stream
+     chatgpt-buffer 0
+     #'(lambda (data)
+        (insert (chatgpt-parse-response data)))
+     )
+    )
+  )
 
 ;; main for testing
 (defun chatgpt-test ()
@@ -159,7 +123,7 @@ HANDLER is function."
          (d (chatgpt-request-data (reverse m))))
 
     (chatgpt-response-parse-and-insert
-     (buffer-name) (point-max)
+     (current-buffer) (point-max)
      (chatgpt-request chatgpt-url-chat d))
     )
   )
@@ -167,3 +131,34 @@ HANDLER is function."
 (provide 'chatgpt)
 
 ;;; chatgpt.el ends here
+
+
+(let* ((m (chatgpt-add-request-message "system" "one"))
+       (m (chatgpt-add-request-message "user" "two" m))
+       (m (chatgpt-add-request-message "system" "three" m))
+       (m (chatgpt-add-request-message "user" "3の倍数と3が含まれる時だけ馬鹿になるPythonのコードを書いてください" m))
+       (d (chatgpt-request-data (reverse m)))
+       (buf (current-buffer)))
+
+  ;; (chatgpt-handle-response-stream
+  ;;  (chatgpt-request chatgpt-url-chat d) 0
+  ;;  `(lambda (data)
+  ;;     ;; (message "%s" (chatgpt-parse-response data))
+  ;;     ;; (with-current-buffer ,buf
+  ;;     ;;   (goto-char (point-max))
+  ;;     ;;   (insert (chatgpt-parse-response data)))
+  ;;     )
+  ;;  )
+)
+
+
+;; これは動く
+  ;; (chatgpt-handle-response-stream
+  ;;  "hoge" 0
+  ;;  `(lambda (data)
+  ;;     (message "%s" (chatgpt-parse-response data))
+  ;;     ;; (with-current-buffer ,buf
+  ;;     ;;   (goto-char (point-max))
+  ;;     ;;   (insert (chatgpt-parse-response data)))
+  ;;     )
+  ;;  )
