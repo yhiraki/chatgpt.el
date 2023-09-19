@@ -48,7 +48,8 @@
   (let ((url-request-method "POST")
         (url-request-extra-headers (chatgpt-request-headers))
         (url-request-data (chatgpt-encode-request-data data)))
-    (url-retrieve url 'chatgpt-kill-url-buffer nil t))
+    ;; (url-retrieve url 'chatgpt-kill-url-buffer nil t))
+    (url-retrieve url #'(lambda (_s) (switch-to-buffer (current-buffer))) nil t))
   )
 
 (defun chatgpt-kill-url-buffer (_status)
@@ -73,7 +74,7 @@ Start from POS"
           (iter-yield data))))
     (if done nil (line-beginning-position))))
 
-(defun chatgpt-handle-response-stream (buffer pos handler)
+(defun chatgpt-handle-response-stream (buffer pos handler timer-seconds)
   "Handle chatgpt streaming response, from chatgpt response BUFFER and POS ition.
 HANDLER is function."
   (with-current-buffer buffer
@@ -81,7 +82,10 @@ HANDLER is function."
       (let* ((gen (chatgpt-handle-response-stream-gen pos))
              (p (iter-do (i gen) (funcall handler i))))
         (when p
-          (run-at-time 0.1 nil 'chatgpt-handle-response-stream buffer p handler))))))
+          (run-at-time
+           timer-seconds nil
+           'chatgpt-handle-response-stream
+           buffer p handler timer-seconds))))))
 
 (defun chatgpt-parse-response (data)
   "Extract message from chatgpt response DATA."
@@ -140,25 +144,29 @@ HANDLER is function."
        (d (chatgpt-request-data (reverse m)))
        (buf (current-buffer)))
 
-  ;; (chatgpt-handle-response-stream
-  ;;  (chatgpt-request chatgpt-url-chat d) 0
-  ;;  `(lambda (data)
-  ;;     ;; (message "%s" (chatgpt-parse-response data))
-  ;;     ;; (with-current-buffer ,buf
-  ;;     ;;   (goto-char (point-max))
-  ;;     ;;   (insert (chatgpt-parse-response data)))
-  ;;     )
-  ;;  )
-)
+  (chatgpt-handle-response-stream
+   (chatgpt-request chatgpt-url-chat d) 0
+   `(lambda (data)
+      (message "%s" (chatgpt-parse-response data))
+      ;; (with-current-buffer ,buf
+      ;;   (goto-char (point-max))
+      ;;   (insert (chatgpt-parse-response data)))
+      )
+   1
+   )
+  )
 
 
 ;; これは動く
-  ;; (chatgpt-handle-response-stream
-  ;;  "hoge" 0
-  ;;  `(lambda (data)
-  ;;     (message "%s" (chatgpt-parse-response data))
-  ;;     ;; (with-current-buffer ,buf
-  ;;     ;;   (goto-char (point-max))
-  ;;     ;;   (insert (chatgpt-parse-response data)))
-  ;;     )
-  ;;  )
+(let ((buf (current-buffer)))
+  (chatgpt-handle-response-stream
+   "hoge" 0
+   `(lambda (data)
+      ;; (message "%s" (chatgpt-parse-response data))
+      (with-current-buffer ,buf
+        (goto-char (point-max))
+        (insert (chatgpt-parse-response data)))
+      )
+   1
+   )
+  )
