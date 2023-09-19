@@ -137,36 +137,36 @@ HANDLER is function."
 ;;; chatgpt.el ends here
 
 
-(let* ((m (chatgpt-add-request-message "system" "one"))
-       (m (chatgpt-add-request-message "user" "two" m))
-       (m (chatgpt-add-request-message "system" "three" m))
-       (m (chatgpt-add-request-message "user" "3の倍数と3が含まれる時だけ馬鹿になるPythonのコードを書いてください" m))
-       (d (chatgpt-request-data (reverse m)))
-       (buf (current-buffer)))
+;; (let* ((m (chatgpt-add-request-message "system" "one"))
+;;        (m (chatgpt-add-request-message "user" "two" m))
+;;        (m (chatgpt-add-request-message "system" "three" m))
+;;        (m (chatgpt-add-request-message "user" "3の倍数と3が含まれる時だけ馬鹿になるPythonのコードを書いてください" m))
+;;        (d (chatgpt-request-data (reverse m)))
+;;        (buf (current-buffer)))
 
-  (chatgpt-handle-response-stream
-   (chatgpt-request chatgpt-url-chat d) 0
-   `(lambda (data)
-      (message "%s" (chatgpt-parse-response data))
-      ;; (with-current-buffer ,buf
-      ;;   (goto-char (point-max))
-      ;;   (insert (chatgpt-parse-response data)))
-      )
-   1
-   )
-  )
+;;   (chatgpt-handle-response-stream
+;;    (chatgpt-request chatgpt-url-chat d) 0
+;;    `(lambda (data)
+;;       (message "%s" (chatgpt-parse-response data))
+;;       ;; (with-current-buffer ,buf
+;;       ;;   (goto-char (point-max))
+;;       ;;   (insert (chatgpt-parse-response data)))
+;;       )
+;;    1
+;;    )
+;;   )
 
 
 ;; これは動く
-(let ((buf (current-buffer)))
-  (chatgpt-handle-response-stream
-   "hoge" 0
-   `(lambda (data)
-      ;; (message "%s" (chatgpt-parse-response data))
-      (with-current-buffer ,buf
-        (goto-char (point-max))
-        (insert (chatgpt-parse-response data)))
-      )
-   1
-   )
-  )
+;; (let ((buf (current-buffer)))
+;;   (chatgpt-handle-response-stream
+;;    "hoge" 0
+;;    `(lambda (data)
+;;       ;; (message "%s" (chatgpt-parse-response data))
+;;       (with-current-buffer ,buf
+;;         (goto-char (point-max))
+;;         (insert (chatgpt-parse-response data)))
+;;       )
+;;    1
+;;    )
+;;   )
