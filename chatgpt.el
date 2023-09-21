@@ -1,4 +1,4 @@
-;;; chatgpt.el --- Use ChatGPT inside Emacs
+;;; chatgpt.el --- Use ChatGPT inside Emacs -*- lexical-binding: t; -*-)
 
 ;; Author: yhiraki <coffexpr@gmail.com>
 ;; URL: https://github.com/yhiraki/chatgpt.el
@@ -55,10 +55,18 @@
   "Kill the buffer returned by `url-retrieve'."
   (kill-buffer (current-buffer)))
 
+(defvar chatgpt--response-done)
+
+(defvar chatgpt--insert-buffer)
+
+(コdefvar chatgpt--insert-position)
+
+(defvar chatgpt--response-position)
+
 (defun chatgpt-handle-response-stream (_beg _end _len)
   "Not documented."
   (save-excursion
-    (goto-char bbeg)
+    (goto-char chatgpt--response-position)
     (let* ((beg (ignore-errors (re-search-forward "^data: ")))
            (has-end (when beg
                       (goto-char beg)
@@ -70,7 +78,7 @@
            )
       (cond ((string= data "[DONE]")
              (message "DONE")
-             (setq done t))
+             (setq chatgpt--response-done t))
             (data
              (progn
                (let* ((data-json (chatgpt-decode-response-data data))
@@ -78,15 +86,15 @@
                             #'(lambda (choice) (cdr (assq 'content (cdr (assq 'delta choice)))))
                             (cdr (assq 'choices data-json))
                             "")))
-                 (let ((res-to res-pos))
-                   (with-current-buffer res-buffer
+                 (let ((res-to chatgpt--response-position))
+                   (with-current-buffer chatgpt--insert-buffer
                      (save-excursion
                        (message "%s" res-to)
                        (goto-char res-to)
                        (insert res))))
-                 (setq res-pos (+ (length res) res-pos))
+                 (setq chatgpt--response-position (+ (length res) chatgpt--response-position))
                  )
-               (setq bbeg end)
+               (setq chatgpt--response-position end)
                )))
       )
     )
@@ -96,10 +104,10 @@
 
 (defun chatgpt-response-parse-and-insert (insert-buffer insert-pos chatgpt-buffer)
   (with-current-buffer chatgpt-buffer
-    (setq-local done nil
-                res-buffer insert-buffer
-                res-pos insert-pos
-                bbeg 0)
+    (setq-local chatgpt--response-done nil
+                chatgpt--insert-buffer insert-buffer
+                chatgpt--response-position insert-pos
+                chatgpt--response-position 0)
     (add-hook
      'after-change-functions
      #'chatgpt-handle-response-stream
