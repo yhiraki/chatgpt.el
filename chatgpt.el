@@ -63,10 +63,14 @@
 
 (defvar chatgpt--response-position)
 
+(defvar chatgpt--response-lock)
+
 (defun chatgpt-handle-response-stream (_beg _end _len)
   "Not documented."
-  (unless chatgpt--response-done
+  (when (and (not chatgpt--response-done)
+             (not chatgpt--response-lock))
     (save-excursion
+      (setq-local chatgpt--response-lock t)
       (goto-char chatgpt--response-position)
       (let* ((beg (ignore-errors (re-search-forward "^data: ")))
              (has-end (when beg
@@ -90,14 +94,14 @@
                    (let ((res-to chatgpt--insert-position))
                      (with-current-buffer chatgpt--insert-buffer
                        (save-excursion
-                         (message "%s" res-to)
                          (goto-char res-to)
                          (insert res))))
                    (setq chatgpt--insert-position (+ (length res) chatgpt--insert-position))
                    )
                  (setq chatgpt--response-position end)
-                 )))
-        ))))
+                 ))))
+      (setq-local chatgpt--response-lock nil)
+      )))
 
 (defconst chatgpt-url-chat "https://api.openai.com/v1/chat/completions")
 
@@ -106,7 +110,8 @@
     (setq-local chatgpt--response-done nil
                 chatgpt--insert-buffer insert-buffer
                 chatgpt--insert-position insert-pos
-                chatgpt--response-position 0)
+                chatgpt--response-position 0
+                chatgpt--response-lock nil)
     (add-hook
      'after-change-functions
      #'chatgpt-handle-response-stream
