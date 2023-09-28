@@ -120,19 +120,14 @@
 
 ;; main for testing
 (defun chatgpt-test ()
-  "chatgpt testing"
+  "Chatgpt testing function."
   (interactive)
-  (let* ((m (chatgpt-add-request-message "system" "one"))
-         (m (chatgpt-add-request-message "user" "two" m))
-         (m (chatgpt-add-request-message "system" "three" m))
-         (m (chatgpt-add-request-message "user" "3の倍数と3が含まれる時だけ馬鹿になるPythonのコードを書いてください" m))
-         (d (chatgpt-request-data (reverse m))))
-
+  (let* ((m `(((:role . "user")(:content . ,(read-from-minibuffer "PROMPT: ")))))
+         (d (chatgpt-request-data m)))
     (chatgpt-response-parse-and-insert
-     (buffer-name) (point-max)
+     (buffer-name) (point)
      (chatgpt-request chatgpt-url-chat d))
-    )
-  )
+    ))
 
 (provide 'chatgpt)
 
