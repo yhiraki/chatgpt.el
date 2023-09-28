@@ -87,13 +87,13 @@
                               #'(lambda (choice) (cdr (assq 'content (cdr (assq 'delta choice)))))
                               (cdr (assq 'choices data-json))
                               "")))
-                   (let ((res-to chatgpt--response-position))
+                   (let ((res-to chatgpt--insert-position))
                      (with-current-buffer chatgpt--insert-buffer
                        (save-excursion
                          (message "%s" res-to)
                          (goto-char res-to)
                          (insert res))))
-                   (setq chatgpt--response-position (+ (length res) chatgpt--response-position))
+                   (setq chatgpt--insert-position (+ (length res) chatgpt--insert-position))
                    )
                  (setq chatgpt--response-position end)
                  )))
@@ -105,7 +105,7 @@
   (with-current-buffer chatgpt-buffer
     (setq-local chatgpt--response-done nil
                 chatgpt--insert-buffer insert-buffer
-                chatgpt--response-position insert-pos
+                chatgpt--insert-position insert-pos
                 chatgpt--response-position 0)
     (add-hook
      'after-change-functions
