@@ -59,46 +59,45 @@
 
 (defvar chatgpt--insert-buffer)
 
-(コdefvar chatgpt--insert-position)
+(defvar chatgpt--insert-position)
 
 (defvar chatgpt--response-position)
 
 (defun chatgpt-handle-response-stream (_beg _end _len)
   "Not documented."
-  (save-excursion
-    (goto-char chatgpt--response-position)
-    (let* ((beg (ignore-errors (re-search-forward "^data: ")))
-           (has-end (when beg
-                      (goto-char beg)
-                      (search-forward "\n\n")))
-           (end (when has-end
-                  (goto-char beg)
-                  (re-search-forward "$")))
-           (data (when end (buffer-substring beg end)))
-           )
-      (cond ((string= data "[DONE]")
-             (message "DONE")
-             (setq chatgpt--response-done t))
-            (data
-             (progn
-               (let* ((data-json (chatgpt-decode-response-data data))
-                      (res (mapconcat
-                            #'(lambda (choice) (cdr (assq 'content (cdr (assq 'delta choice)))))
-                            (cdr (assq 'choices data-json))
-                            "")))
-                 (let ((res-to chatgpt--response-position))
-                   (with-current-buffer chatgpt--insert-buffer
-                     (save-excursion
-                       (message "%s" res-to)
-                       (goto-char res-to)
-                       (insert res))))
-                 (setq chatgpt--response-position (+ (length res) chatgpt--response-position))
-                 )
-               (setq chatgpt--response-position end)
-               )))
-      )
-    )
-  )
+  (unless chatgpt--response-done
+    (save-excursion
+      (goto-char chatgpt--response-position)
+      (let* ((beg (ignore-errors (re-search-forward "^data: ")))
+             (has-end (when beg
+                        (goto-char beg)
+                        (search-forward "\n\n")))
+             (end (when has-end
+                    (goto-char beg)
+                    (re-search-forward "$")))
+             (data (when end (buffer-substring beg end)))
+             )
+        (cond ((string= data "[DONE]")
+               (message "DONE")
+               (setq-local chatgpt--response-done t))
+              (data
+               (progn
+                 (let* ((data-json (chatgpt-decode-response-data data))
+                        (res (mapconcat
+                              #'(lambda (choice) (cdr (assq 'content (cdr (assq 'delta choice)))))
+                              (cdr (assq 'choices data-json))
+                              "")))
+                   (let ((res-to chatgpt--response-position))
+                     (with-current-buffer chatgpt--insert-buffer
+                       (save-excursion
+                         (message "%s" res-to)
+                         (goto-char res-to)
+                         (insert res))))
+                   (setq chatgpt--response-position (+ (length res) chatgpt--response-position))
+                   )
+                 (setq chatgpt--response-position end)
+                 )))
+        ))))
 
 (defconst chatgpt-url-chat "https://api.openai.com/v1/chat/completions")
 
