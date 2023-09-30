@@ -43,13 +43,13 @@
   `(("Content-Type" . "application/json")
     ("Authorization" . ,(format "Bearer %s" chatgpt-api-token))))
 
-(defun chatgpt-request (url data)
+(defun chatgpt-request (url data callback)
   "Send DATA to URL as a POST request."
   (let ((url-request-method "POST")
         (url-request-extra-headers (chatgpt-request-headers))
         (url-request-data (chatgpt-encode-request-data data)))
-    (url-retrieve url 'chatgpt-kill-url-buffer nil t))
-  )
+    (url-retrieve url callback nil t)
+    ))
 
 (defun chatgpt-kill-url-buffer (status)
   "Kill the buffer returned by `url-retrieve'."
@@ -126,8 +126,8 @@
          (d (chatgpt-request-data m)))
     (chatgpt-response-parse-and-insert
      (buffer-name) (point)
-     (chatgpt-request chatgpt-url-chat d))
-    ))
+     (chatgpt-request chatgpt-url-chat d 'chatgpt-kill-url-buffer)
+    )))
 
 (provide 'chatgpt)
 
